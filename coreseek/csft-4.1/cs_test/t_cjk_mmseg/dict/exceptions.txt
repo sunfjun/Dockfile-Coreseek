@@ -1,0 +1,6 @@
+MS Windows => ms windows
+Microsoft Windows => ms windows
+C++ => cplusplus
+c++ => cplusplus
+C plus plus => cplusplus
+test 中文 => 测试中文

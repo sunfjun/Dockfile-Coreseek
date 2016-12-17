@@ -1,0 +1,1 @@
+@hourly /usr/local/bin/indexer --rotate --all

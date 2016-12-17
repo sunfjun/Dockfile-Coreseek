@@ -1,0 +1,304 @@
+#! /bin/sh
+
+# bootstrap (GNU M4) version 2009-03-23
+# Written by Gary V. Vaughan  <gary@gnu.org>
+
+# Copyright (C) 2004, 2005, 2006, 2007, 2008, 2009 Free Software
+# Foundation, Inc.
+
+# This file is part of GNU M4.
+#
+# GNU M4 is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# GNU M4 is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# Usage: $progname [options]
+
+# -f      --force            bootstrap even when sources are not from git
+# -v      --version          print version information
+# -h,-?   --help             print short or long help message
+
+# You can also set the following variables to help $progname
+# locate the right tools:
+#   AUTORECONF, CONFIG_SHELL, GNULIB_SRCDIR, M4, RM, SED
+
+# This script bootstraps a git or CVS checkout of GNU M4 by correctly
+# calling out to parts of the GNU Build Platform.  Currently this
+# requires GNU Autoconf 2.60, GNU Automake 1.10.1, and bleeding edge
+# git or CVS snapshots of GNU Gnulib.
+
+# Report bugs to <bug-m4@gnu.org>
+
+: ${AUTORECONF=autoreconf}
+: ${CONFIG_SHELL=/bin/sh}
+: ${RM='rm -f'}
+: ${SED=sed}
+
+# Ensure file names are sorted consistently across platforms.
+LC_ALL=C
+export LC_ALL
+
+config_macro_dir=m4
+
+dirname="s,/[^/]*$,,"
+basename="s,^.*/,,g"
+
+# Work around backward compatibility issue on IRIX 6.5. On IRIX 6.4+, sh
+# is ksh but when the shell is invoked as "sh" and the current value of
+# the _XPG environment variable is not equal to 1 (one), the special
+# positional parameter $0, within a function call, is the name of the
+# function.
+progpath="$0"
+
+# The name of this program:
+progname=`echo "$progpath" | $SED "$basename"`
+PROGRAM=bootstrap
+
+# Detect whether this is a version control system checkout or a tarball
+vcs_only_file=HACKING
+
+# func_echo arg...
+# Echo program name prefixed message.
+func_echo ()
+{
+    echo $progname: ${1+"$@"}
+}
+
+
+# func_error arg...
+# Echo program name prefixed message to standard error.
+func_error ()
+{
+    echo $progname: ${1+"$@"} >&2
+}
+
+# func_fatal_error arg...
+# Echo program name prefixed message to standard error, and exit.
+func_fatal_error ()
+{
+    func_error ${1+"$@"}
+    exit $EXIT_FAILURE
+}
+
+# func_verbose arg...
+# Echo program name prefixed message in verbose mode only.
+func_verbose ()
+{
+    $opt_verbose && func_error ${1+"$@"}
+}
+
+# func_missing_arg argname
+# Echo program name prefixed message to standard error and set global
+# exit_cmd.
+func_missing_arg ()
+{
+   func_error "missing argument for $1"
+   exit_cmd=exit
+}
+
+# func_fatal_help arg...
+# Echo program name prefixed message to standard error, followed by
+# a help hint, and exit.
+func_fatal_help ()
+{
+    func_error ${1+"$@"}
+    func_fatal_error "Try \`$progname --help' for more information."
+}
+
+# func_missing_arg argname
+# Echo program name prefixed message to standard error and set global
+# exit_cmd.
+func_missing_arg ()
+{
+   func_error "missing argument for $1"
+   exit_cmd=exit
+}
+
+# func_usage
+# Echo short help message to standard output and exit.
+func_usage ()
+{
+    $SED '/^# Usage:/,/# -h/ {
+	s/^# //; s/^# *$//;
+	s/\$progname/'$progname'/;
+	p;
+    }; d' < "$progpath"
+    echo
+    echo "run \`$progname --help | more' for full usage"
+    exit $EXIT_SUCCESS
+}
+
+# func_help
+# Echo long help message to standard output and exit.
+func_help ()
+{
+    $SED '/^# Usage:/,/# Report bugs to/ {
+	s/^# //; s/^# *$//;
+	s/\$progname/'$progname'/;
+	p;
+     }; d' < "$progpath"
+    exit $EXIT_SUCCESS
+}
+
+# func_version
+# Echo version message to standard output and exit.
+func_version ()
+{
+    $SED '/^# '$PROGRAM' (GNU /,/# warranty; / {
+	s/^# //; s/^# *$//;
+	s/\((C)\)[ 0-9,-]*\( [1-9][0-9]*\)/\1\2/;
+	p;
+     }; d' < "$progpath"
+     exit $EXIT_SUCCESS
+}
+
+# func_update
+# Copy $1 to $2 if it is newer.
+func_update ()
+{
+  if test -f "$2" && cmp -s "$1" "$2" ; then
+    func_verbose "$2 is up-to-date"
+  else
+    func_echo "copying $1 -> $2"
+    cp "$1" "$2"
+  fi
+}
+
+# Parse options once, thoroughly.  This comes as soon as possible in
+# the script to make things like `bootstrap --version' happen quickly.
+{
+  # sed scripts:
+  my_sed_single_opt='1s/^\(..\).*$/\1/;q'
+  my_sed_single_rest='1s/^..\(.*\)$/\1/;q'
+  my_sed_long_opt='1s/^\(--[^=]*\)=.*/\1/;q'
+  my_sed_long_arg='1s/^--[^=]*=//'
+
+  # this just eases exit handling
+  while test $# -gt 0; do
+    opt="$1"
+    shift
+    case $opt in
+      # Separate optargs to short options:
+      -f|--force)	vcs_only_file=					;;
+      -\?|-h)		func_usage					;;
+      --help)		func_help					;;
+      --version)	func_version					;;
+      --)		break						;;
+      -*)		func_fatal_help "unrecognized option \`$opt'"	;;
+      *)		set -- "$opt" ${1+"$@"};	break		;;
+    esac
+  done
+
+  # Bail if the options were screwed
+  $exit_cmd $EXIT_FAILURE
+
+  if test -n "$vcs_only_file" && test ! -r "$vcs_only_file"; then
+    func_fatal_error \
+      "Bootstrapping from a non-version-control distribution is risky."
+  fi
+}
+
+## ---------------- ##
+## Version control. ##
+## ---------------- ##
+
+# gnulib-tool updates m4/.{git,cvs}ignore and lib/.{git,cvs}ignore, and
+# keeping generated files under version control does not make sense.
+# Since lib is entirely ignored, we only need to prepopulate the m4 ignore
+# files with generated files not tracked by gnulib-tool.
+if test -f $config_macro_dir/.gitignore ; then
+  :
+else
+  func_echo "creating initial $config_macro_dir/.cvsignore"
+  cat > $config_macro_dir/.cvsignore <<\EOF
+# files created by gnulib, but that gnulib doesn't track
+*~
+.cvsignore
+.gitignore
+gnulib-comp.m4
+# gnulib-tool edits below here
+EOF
+  func_echo "creating initial $config_macro_dir/.gitignore"
+  cp $config_macro_dir/.cvsignore $config_macro_dir/.gitignore
+fi
+
+# See if we can use gnulib's git-merge-changelog merge driver.
+if test -d .git && (git --version) >/dev/null 2>/dev/null ; then
+  if git config merge.merge-changelog.driver >/dev/null ; then
+    :
+  elif (git-merge-changelog --version) >/dev/null 2>/dev/null ; then
+    func_echo "initializing git-merge-changelog driver"
+    git config merge.merge-changelog.name 'GNU-style ChangeLog merge driver'
+    git config merge.merge-changelog.driver 'git-merge-changelog %O %A %B'
+  else
+    func_echo "consider installing git-merge-changelog from gnulib"
+  fi
+  if git config diff.texinfo.funcname >/dev/null ; then
+    :
+  else
+    func_echo "initializing git texinfo diff driver"
+    git config diff.texinfo.funcname '^@node[ \t][ \t]*\\([^,][^,]*\\)'
+  fi
+fi
+
+## ------------------------------ ##
+## Update the gnulib module tree. ##
+## ------------------------------ ##
+
+if test -d .git && (git --version) >/dev/null 2>/dev/null ; then
+  if test -f gnulib/gnulib-tool ; then
+    func_echo "updating gnulib submodule"
+    git submodule update \
+      || func_fatal_error "Unable to update gnulib"
+  else
+    # A fresh checkout creates an empty subdirectory gnulib.  However,
+    # older git didn't know how to clone into an empty subdir.  If the
+    # user provided GNULIB_SRCDIR, then make the initial clone refer
+    # to the existing checkout, to save network traffic.
+    func_echo "importing gnulib submodule"
+    if test -d "$GNULIB_SRCDIR" ; then
+      rmdir gnulib 2>/dev/null
+      git clone --reference "$GNULIB_SRCDIR" git://git.sv.gnu.org/gnulib.git \
+	&& git submodule init && git submodule update \
+	|| func_fatal_error "Unable to update gnulib"
+    else
+      git submodule update --init \
+	|| func_fatal_error "Unable to update gnulib"
+    fi
+  fi
+else
+  func_echo "git not detected.  If needed, update gnulib subdirectory manually"
+fi
+
+## ---------------------- ##
+## Import Gnulib modules. ##
+## ---------------------- ##
+
+func_echo "running: $CONFIG_SHELL gnulib/gnulib-tool --update"
+$CONFIG_SHELL gnulib/gnulib-tool --update \
+  || func_fatal_error "gnulib-tool failed"
+
+## ----------- ##
+## Autoreconf. ##
+## ----------- ##
+
+func_echo "running: $AUTORECONF --verbose --install"
+$AUTORECONF --verbose --install || func_fatal_error "autoreconf failed"
+
+exit 0
+
+# Local variables:
+# eval: (add-hook 'write-file-hooks 'time-stamp)
+# time-stamp-start: "# bootstrap (GNU M4) version "
+# time-stamp-format: "%:y-%02m-%02d"
+# time-stamp-end: "$"
+# End:

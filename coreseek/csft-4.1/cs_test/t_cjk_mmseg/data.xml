@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<sphinx:docset>
+	<sphinx:schema>
+	<sphinx:field name="subject"/>
+	<sphinx:field name="message"/>
+	<sphinx:attr name="type" type="string" />
+	<sphinx:attr name="author" type="int" bits="16" default="1"/>
+	</sphinx:schema>
+    
+ 	<sphinx:document id="1">
+	<type><![CDATA[test]]> </type>
+	<subject><![CDATA[ 中文分词测试，能用吗？中华人民共和国 Title test god ]]></subject>
+	<message><![CDATA[ full __message_test AK-47 Bom64 ]]></message>
+	<author>1</author>
+	</sphinx:document>
+    
+	<sphinx:document id="2">
+	<type><![CDATA[test]]> </type>
+	<subject><![CDATA[ Title2 ]]></subject>
+	<message><![CDATA[ my God test. C++ c++ MS Windows 中文分词测试，能用吗？ ]]></message>
+	<author>2</author>
+	</sphinx:document>
+	
+    	<sphinx:document id="3">
+	<type><![CDATA[demo]]> </type>
+	<subject><![CDATA[ abc efg efg efg efg efg]]></subject>
+	<message><![CDATA[ my God test. 中文分词测试，能用吗？ ]]></message>
+	<author>2</author>
+	</sphinx:document>
+	
+	<sphinx:document id="4">
+	<type><![CDATA[demo]]> </type>
+	<subject><![CDATA[ abc abc ]]></subject>
+	<message><![CDATA[ abc efg my God test. hh 中文分词测试，能用吗？ ]]></message>
+	<author>2</author>
+	</sphinx:document>
+	
+	<sphinx:document id="5">
+	<type><![CDATA[single]]> </type>
+	<subject><![CDATA[ efg efg ]]></subject>
+	<message><![CDATA[ my God test. 中文分词测试，能用吗？ ]]></message>
+	<author>2</author>
+	</sphinx:document>
+	
+</sphinx:docset>
+

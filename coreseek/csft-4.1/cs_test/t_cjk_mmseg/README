@@ -1,0 +1,18 @@
+测试中文分词法
+- 使用 xmlpipe2 测试
+- 测试事项
+  = 普通分词
+  = mmseg 的同义词
+  = sphinx 的同义词
+  = --rotate时，同时重新加载词库
+    * 需要增加新接口，在mmseg上
+  = 英文与符号的混合
+  = 中文英文与符号的混合
+  = 切分过程的调试输出
+
+[ISSUE]
+  - 当 charset_debug = 1 并且 wordforms 有规则时，控制台无输出
+  - 暂时不支持 --rotate 时，更新分词词库
+ 
+[TIPS]
+  - 使用wordforms 可以将多个 token 混合在一起

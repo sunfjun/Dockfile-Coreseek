@@ -1,0 +1,11 @@
+gl_list.o: gl_list.c config.h gl_list.h \
+ /usr/lib/gcc/x86_64-linux-gnu/4.6/include/stdbool.h \
+ /usr/lib/gcc/x86_64-linux-gnu/4.6/include/stddef.h
+
+config.h:
+
+gl_list.h:
+
+/usr/lib/gcc/x86_64-linux-gnu/4.6/include/stdbool.h:
+
+/usr/lib/gcc/x86_64-linux-gnu/4.6/include/stddef.h:
